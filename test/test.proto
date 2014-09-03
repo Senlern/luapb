@@ -1,0 +1,16 @@
+package person;
+
+message personInfo
+{
+	required int32  id = 1;
+	required string name = 2;
+};
+
+message persons
+{
+	required int32 uid = 1;	
+	required string uname = 5;
+	optional string udescription = 3;
+	repeated string strs = 2;
+	repeated personInfo persons = 4;
+};

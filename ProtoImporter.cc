@@ -30,11 +30,12 @@ ProtoImporter::ProtoImporter():
 	char* protopath = getenv("PROTO_PATH");
 	if (!protopath)
 	{
-		sourceTree.MapPath("", "");
+		sourceTree.MapPath("", "D:\\testLuapb");
 	}
 	else
 	{
-		sourceTree.MapPath("", protopath);
+		sourceTree.MapPath("", "D:\\testLuapb");
+		//sourceTree.MapPath("", protopath);
 	}
 	printf("[ProtoImporter] protopath:%s\n", protopath);
 }
