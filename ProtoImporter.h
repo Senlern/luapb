@@ -22,8 +22,6 @@ public:
 public:
 	google::protobuf::compiler::Importer importer;
 	google::protobuf::DynamicMessageFactory factory;
-
-	//static ProtoImporter *m_instance;
 };
 
 //#define sProtoImporter Singleton<ProtoImporter>::instance()

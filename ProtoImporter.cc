@@ -34,8 +34,8 @@ ProtoImporter::ProtoImporter():
 	}
 	else
 	{
-		sourceTree.MapPath("", "D:\\testLuapb");
 		//sourceTree.MapPath("", protopath);
+		sourceTree.MapPath("", "D:\\testLuapb");
 	}
 	printf("[ProtoImporter] protopath:%s\n", protopath);
 }
