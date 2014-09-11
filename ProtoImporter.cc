@@ -1,5 +1,5 @@
-
 #include "ProtoImporter.h"
+#include "platform/CCFileUtils.h"
 
 #include <stdio.h>
 
@@ -27,17 +27,29 @@ ProtoImporter &ProtoImporter::instance()
 ProtoImporter::ProtoImporter():
 		importer(&sourceTree, &errorCollector)
 {
-	char* protopath = getenv("PROTO_PATH");
-	if (!protopath)
+	auto fileUtils = cocos2d::FileUtils::getInstance();
+
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
 	{
-		sourceTree.MapPath("", "D:\\testLuapb");
+		auto path = fileUtils->fullPathForFilename("src/main.lua");
+		auto pos = path.find("src/main.lua");
+		path.erase(pos);
+		path += "res/proto";
+		sourceTree.MapPath("", path);
 	}
-	else
+#else
 	{
-		//sourceTree.MapPath("", protopath);
-		sourceTree.MapPath("", "D:\\testLuapb");
+		auto writePath = fileUtils->getWritablePath();
+		if(writePath.at(writePath.length()-1) == '\\' || writePath.at(writePath.length()-1) == '/')
+		{
+			writePath.erase(writePath.length()-1);
+		}
+ 
+		sourceTree.MapPath("", writePath + "/res/proto");
 	}
-	printf("[ProtoImporter] protopath:%s\n", protopath);
+#endif
+
+	//printf("[ProtoImporter] protopath:%s\n", protopath);
 }
 
 bool ProtoImporter::Import(const std::string& filename)

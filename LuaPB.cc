@@ -72,6 +72,12 @@ static int pb_repeated_add(lua_State* L)
     	Message* msg = reflection->AddMessage(message, field);
     	return push_message(L, msg, false);
     }
+	else if(field->type() == google::protobuf::FieldDescriptor::TYPE_ENUM)
+	{
+		int val = luaL_checkinteger(L, 3);
+		const EnumValueDescriptor* enum_value = field->enum_type()->FindValueByNumber(val);
+		reflection->AddEnum(message, field, enum_value);
+	}
     else if(field->type() == google::protobuf::FieldDescriptor::TYPE_INT32)
     {
     	int val = static_cast<int>(luaL_checkinteger(L, 2));
@@ -171,6 +177,11 @@ static int pb_repeated_get(lua_State* L)
 	{
 		lua_pushinteger(L, reflection->GetRepeatedInt32(*message, field, index));
 	}
+	else if(field->type() == google::protobuf::FieldDescriptor::TYPE_ENUM)
+	{
+		int val = (reflection->GetRepeatedEnum(*message, field, index))->number();
+		lua_pushinteger(L, val);
+	}
 	else if(field->type() == google::protobuf::FieldDescriptor::TYPE_STRING)
 	{
 		lua_pushstring(L, reflection->GetRepeatedString(*message, field, index).data());
@@ -231,6 +242,12 @@ static int pb_repeated_set(lua_State* L)
 	{
 		int val = static_cast<int>(luaL_checkinteger(L, 3));
 		reflection->SetRepeatedInt32(message, field, index, val);
+	}
+	else if(field->type() == google::protobuf::FieldDescriptor::TYPE_ENUM)
+	{
+		int val = luaL_checkinteger(L, 3);
+		const EnumValueDescriptor* enum_value = field->enum_type()->FindValueByNumber(val);
+		reflection->SetRepeatedEnum(message, field, index, enum_value);
 	}
 	else if(field->type() == google::protobuf::FieldDescriptor::TYPE_UINT32)
 	{
@@ -340,6 +357,11 @@ static int pb_get(lua_State* L)
     {
     	return push_repeated_msg(L, message, const_cast<FieldDescriptor*>(field));
     }
+	else if(field->type() == google::protobuf::FieldDescriptor::TYPE_ENUM)
+	{
+		int n = (reflection->GetEnum(*message, field))->number();
+		lua_pushinteger(L, n);
+	}
     else if(field->type() == google::protobuf::FieldDescriptor::TYPE_INT32)
 	{
 		lua_pushinteger(L, reflection->GetInt32(*message, field));
@@ -411,6 +433,12 @@ static int pb_set(lua_State* L)
     	const char *str = luaL_checklstring(L, 3, &strlen);
         reflection->SetString(message, field, str);
     }
+	else if(field->type() == google::protobuf::FieldDescriptor::TYPE_ENUM)
+	{
+		int value = luaL_checkinteger(L, 3);
+		const EnumValueDescriptor* enum_value = field->enum_type()->FindValueByNumber(value);
+		reflection->SetEnum(message, field, enum_value);
+	}
     else if (field->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
     {
     	size_t strlen;
