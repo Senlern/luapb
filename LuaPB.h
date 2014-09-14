@@ -10,6 +10,22 @@ extern "C" {
 }
 
 #include <google/protobuf/message.h>
+#include <string>
+
+#include <google/protobuf/dynamic_message.h>
+#include <google/protobuf/compiler/importer.h>
+
+class MyMultiFileErrorCollector : public google::protobuf::compiler::MultiFileErrorCollector
+{
+        virtual void AddError(
+                const std::string & filename,
+                int line,
+                int column,
+                const std::string & message)
+        {
+        	fprintf(stderr, "%s:%d:%d:%s\n", filename.c_str(), line, column, message.c_str());
+       }
+};
 
 typedef struct tagluamsg
 {
@@ -23,7 +39,7 @@ typedef struct tagluarepeatedmsg
 	google::protobuf::FieldDescriptor* field;
 }lua_repeated_msg;
 
-#define PB_MESSAGE "pb"
+#define PB_MESSAGE "pb2"
 #define PB_MESSAGE_META "pb_meta"
 
 #define PB_REPEATED_MESSAGE_META "pb_repeated_meta"

@@ -1,6 +1,6 @@
 
 #include "LuaPB.h"
-#include "ProtoImporter.h"
+//#include "ProtoImporter.h"
 
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor_database.h>
@@ -11,6 +11,15 @@
 #include <google/protobuf/compiler/importer.h>
 
 using namespace google::protobuf;
+
+#include "platform/CCFileUtils.h"
+
+#include <stdio.h>
+
+static google::protobuf::DynamicMessageFactory factory;
+static MyMultiFileErrorCollector errorCollector;
+static google::protobuf::compiler::DiskSourceTree sourceTree;
+static google::protobuf::compiler::Importer importer(&sourceTree, &errorCollector);
 
 static int push_message(lua_State* L, 
 						Message* message, 
@@ -292,20 +301,73 @@ static int pb_repeated_set(lua_State* L)
 static int pb_import(lua_State* L)
 {
 	const char* filename = luaL_checkstring(L, 1);
-	sProtoImporter.Import(filename);
+
+#if (CC_TARGET_PLATFORM != CC_PLATFORM_WIN32)
+	static std::vector<std::string> _importFiles;
+
+	auto fileUtils = cocos2d::FileUtils::getInstance();
+	auto filePath = fileUtils->fullPathForFilename(std::string("proto/") + std::string(filename));
+	
+	
+	std::vector<std::string>::iterator it;
+	for(it = _importFiles.begin(); it != _importFiles.end(); it++)
+	{
+		if(*it == filename)
+		{
+			break;
+		}
+	}
+	if(it == _importFiles.end())
+	{
+		auto writePath = fileUtils->getWritablePath();
+		if(writePath.at(writePath.length()-1) == '\\' || writePath.at(writePath.length()-1) == '/')
+		{
+			writePath.erase(writePath.length()-1);
+		}
+		auto file = writePath + "/" + std::string(filename);
+		FILE *fp = fopen(file.c_str(), "w+");
+		if(!fp)
+		{
+			CCLOG("----- android write file to write path for import file failed, file name: %s", file.c_str());
+			return -1;
+		}
+		auto data = fileUtils->getStringFromFile(filePath);
+		fwrite(data.c_str(), data.length(), 1, fp);
+		fclose(fp);
+	}
+#endif
+
+	const  google::protobuf::FileDescriptor* filedescriptor = importer.Import(std::string(filename));
+	if (!filedescriptor)
+	{
+		fprintf(stderr, "import (%s) file descriptor error\n", filename);
+		CCLOG("-------- pb_import failed,file: %s", filename);
+		return -1;
+	}
+	CCLOG("-------- pb_import success, file name: %s", filename);
 	return 0;
 }
 
 static int pb_new(lua_State* L)
 {
-	const char* type_name = luaL_checkstring(L, 1);
-	Message* message = sProtoImporter.createDynamicMessage(type_name);
-	if (!message)
+	const char* typeName = luaL_checkstring(L, 1);
+	//Message* message = sProtoImporter.createDynamicMessage(type_name);
+	google::protobuf::Message* message = NULL;
+	const google::protobuf::Descriptor* descriptor = importer.pool()->FindMessageTypeByName(std::string(typeName));
+	if (descriptor)
 	{
-		fprintf(stderr, "pb_new error, result is typename(%s) not found!\n", type_name);
-		return 0;
+		const google::protobuf::Message* prototype = factory.GetPrototype(descriptor);
+		if (prototype)
+		{
+			message = prototype->New();
+		}
 	}
 
+	if (!message)
+	{
+		fprintf(stderr, "pb_new error, result is typename(%s) not found!\n", typeName);
+		return 0;
+	}
 	return push_message(L, message, true);
 }
 
@@ -340,7 +402,6 @@ static int pb_get(lua_State* L)
 {
 	lua_pbmsg* luamsg = (lua_pbmsg*)luaL_checkudata(L, 1, PB_MESSAGE_META);
 	const char* field_name = luaL_checkstring(L, 2);
-
     Message* message = luamsg->msg;
     if (!message)
     {
@@ -405,6 +466,7 @@ static int pb_get(lua_State* L)
     	Message* msg = reflection->MutableMessage(message, field);
     	return push_message(L, msg, false);
 	}
+
     return 1;
 }
 
@@ -484,6 +546,8 @@ static int pb_set(lua_State* L)
     {
     	luaL_argerror(L, 2, "pb_set field_name type error");
     }
+
+
     return 0;
 }
 
@@ -539,6 +603,35 @@ static const struct luaL_reg repeatedlib[] = {
 
 int luaopen_luapb(lua_State* L)
 {
+	auto fileUtils = cocos2d::FileUtils::getInstance();
+	/*
+	auto writePath = fileUtils->getWritablePath();
+	
+	if(writePath.at(writePath.length()-1) == '\\' || writePath.at(writePath.length()-1) == '/')
+	{
+		writePath.erase(writePath.length()-1);
+	}
+	writePath += "/proto";
+	
+	sourceTree.MapPath("", writePath);
+	*/
+	
+	
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
+	{
+		auto path = fileUtils->fullPathForFilename("res/proto/Login.proto");
+		auto pos = path.find("Login.proto");
+		path.erase(pos);
+		sourceTree.MapPath("", path);
+	}
+#else
+	{
+		auto writePath = fileUtils->getWritablePath();
+		sourceTree.MapPath("", writePath);
+	}
+#endif
+	
+
 	luaL_newmetatable(L, PB_REPEATED_MESSAGE_META); 
 	luaL_register(L, NULL, repeatedlib);
 

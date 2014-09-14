@@ -21,15 +21,9 @@
     <ClCompile Include="LuaPB.cc">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="ProtoImporter.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LuaPB.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
-    <ClInclude Include="ProtoImporter.h">
       <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>
