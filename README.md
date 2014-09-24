@@ -10,3 +10,5 @@
 	lua里设置bool类型的值时使用数值，0代表false，非0代表true，获取bool的值时正常。
 	详情参考代码
   
+感谢zhanjunxiong大神的无私分享！
+原项目链接： https://github.com/zhanjunxiong/luapb
