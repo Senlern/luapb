@@ -39,7 +39,7 @@ typedef struct tagluarepeatedmsg
 	google::protobuf::FieldDescriptor* field;
 }lua_repeated_msg;
 
-#define PB_MESSAGE "pb2"
+#define PB_MESSAGE "pb"
 #define PB_MESSAGE_META "pb_meta"
 
 #define PB_REPEATED_MESSAGE_META "pb_repeated_meta"

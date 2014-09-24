@@ -83,7 +83,7 @@ static int pb_repeated_add(lua_State* L)
     }
 	else if(field->type() == google::protobuf::FieldDescriptor::TYPE_ENUM)
 	{
-		int val = luaL_checkinteger(L, 3);
+		int val = static_cast<int>(luaL_checkinteger(L, 2));
 		const EnumValueDescriptor* enum_value = field->enum_type()->FindValueByNumber(val);
 		reflection->AddEnum(message, field, enum_value);
 	}
@@ -300,13 +300,15 @@ static int pb_repeated_set(lua_State* L)
 ///////////////////////////////////////////////////////////
 static int pb_import(lua_State* L)
 {
+	static std::vector<std::string> _importFiles;
+	
+	CCLOG("-------- pb_import success");
+
 	const char* filename = luaL_checkstring(L, 1);
 
 #if (CC_TARGET_PLATFORM != CC_PLATFORM_WIN32)
-	static std::vector<std::string> _importFiles;
-
 	auto fileUtils = cocos2d::FileUtils::getInstance();
-	auto filePath = fileUtils->fullPathForFilename(std::string("proto/") + std::string(filename));
+	auto filePath = fileUtils->fullPathForFilename(std::string(filename));
 	
 	
 	std::vector<std::string>::iterator it;
@@ -352,6 +354,7 @@ static int pb_new(lua_State* L)
 {
 	const char* typeName = luaL_checkstring(L, 1);
 	//Message* message = sProtoImporter.createDynamicMessage(type_name);
+	//CCLOG("-------- pb_new");
 	google::protobuf::Message* message = NULL;
 	const google::protobuf::Descriptor* descriptor = importer.pool()->FindMessageTypeByName(std::string(typeName));
 	if (descriptor)
@@ -368,6 +371,7 @@ static int pb_new(lua_State* L)
 		fprintf(stderr, "pb_new error, result is typename(%s) not found!\n", typeName);
 		return 0;
 	}
+	CCLOG("-------- pb_new success");
 	return push_message(L, message, true);
 }
 
@@ -402,6 +406,7 @@ static int pb_get(lua_State* L)
 {
 	lua_pbmsg* luamsg = (lua_pbmsg*)luaL_checkudata(L, 1, PB_MESSAGE_META);
 	const char* field_name = luaL_checkstring(L, 2);
+	
     Message* message = luamsg->msg;
     if (!message)
     {
@@ -467,6 +472,7 @@ static int pb_get(lua_State* L)
     	return push_message(L, msg, false);
 	}
 
+	CCLOG("------ pb get success");
     return 1;
 }
 
@@ -475,6 +481,7 @@ static int pb_set(lua_State* L)
 	lua_pbmsg* luamsg = (lua_pbmsg*)luaL_checkudata(L, 1, PB_MESSAGE_META);
 	const char* field_name = luaL_checkstring(L, 2);
 
+	//CCLOG("-------- pb set");
     Message* message = luamsg->msg;
     if (!message)
     {
@@ -498,6 +505,9 @@ static int pb_set(lua_State* L)
 	else if(field->type() == google::protobuf::FieldDescriptor::TYPE_ENUM)
 	{
 		int value = luaL_checkinteger(L, 3);
+		//EnumValueDescriptor val;
+		//val.number_ = n;
+        //reflection->SetEnum(message, field, &val);
 		const EnumValueDescriptor* enum_value = field->enum_type()->FindValueByNumber(value);
 		reflection->SetEnum(message, field, enum_value);
 	}
@@ -547,6 +557,7 @@ static int pb_set(lua_State* L)
     	luaL_argerror(L, 2, "pb_set field_name type error");
     }
 
+	//CCLOG("-------- pb set success");
 
     return 0;
 }
@@ -560,7 +571,10 @@ static int pb_parseFromString(lua_State* L)
 
     size_t bin_len;
     const char* bin = static_cast<const char*>(	luaL_checklstring(L, 2, &bin_len));
-    message->ParseFromArray(bin, bin_len);
+    if(!message->ParseFromArray(bin, bin_len))
+	{
+		CCLOG("ParseFromArray failed!");
+	}
     return 0;
 }
 
@@ -570,7 +584,11 @@ static int pb_serializeToString(lua_State* L)
     Message* message = luamsg->msg;
 
     std::string msg;
-    message->SerializeToString(&msg);
+    //message->SerializeToString(&msg);
+	if(!message->SerializeToString(&msg))
+	{
+		CCLOG("ParseFromArray failed!");
+	}
     lua_pushlstring(L, msg.c_str(), msg.length());
 	return 1;
 }
@@ -619,10 +637,14 @@ int luaopen_luapb(lua_State* L)
 	
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
 	{
-		auto path = fileUtils->fullPathForFilename("res/proto/Login.proto");
-		auto pos = path.find("Login.proto");
+		auto path = fileUtils->fullPathForFilename("proto/test.proto");
+		auto pos = path.find("test.proto");
 		path.erase(pos);
+		//path += "res/proto";
 		sourceTree.MapPath("", path);
+		CCLOG("--------------MapPath: %s", path.c_str());
+		CCLOG("--------------MapPath: %s", path.c_str());
+		CCLOG("--------------MapPath: %s", path.c_str());
 	}
 #else
 	{
